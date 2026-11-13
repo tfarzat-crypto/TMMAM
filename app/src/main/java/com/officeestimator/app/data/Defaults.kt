@@ -93,7 +93,7 @@ object Rates {
 
 /**
  * سعر وحدة حسب الدولة. [sa] و [eg] قيم بداية فقط.
- * أسعار سوريا (بالدولار) = أسعار السعودية ÷ [Prices.SAR_PER_USD]، وهي أرقام بداية غير موثّقة.
+ * [sy] سعر سوريا بالدولار من مصادر منشورة (2026)؛ إن كان فارغاً فالبداية = سعر السعودية ÷ [Prices.SAR_PER_USD].
  * [refs] الدول التي قيمتها مأخوذة من مصدر منشور؛ غير ذلك افتراضي يجب مراجعته.
  */
 data class PriceDef(
@@ -103,7 +103,8 @@ data class PriceDef(
     val group: String,
     val sa: Double,
     val eg: Double,
-    val refs: Set<String> = emptySet()
+    val refs: Set<String> = emptySet(),
+    val sy: Double? = null
 )
 
 object Prices {
@@ -113,22 +114,29 @@ object Prices {
     const val G_INS = "العزل"
     const val G_EARTH = "الحفر والموقع"
 
+    private val SY = setOf("SY")
+
     val defs: List<PriceDef> = listOf(
-        PriceDef("steel", "حديد التسليح", "طن", G_STRUCT, 3300.0, 39500.0, setOf("SA", "EG")),
-        PriceDef("readymix", "خرسانة جاهزة مسلحة (توريد)", "م³", G_STRUCT, 240.0, 2600.0),
+        // سوريا: 600–670 $/طن في أغلب المصادر (مايو–يونيو 2026)
+        PriceDef("steel", "حديد التسليح", "طن", G_STRUCT, 3300.0, 39500.0, setOf("SA", "EG", "SY"), sy = 660.0),
+        // سوريا: بيتون جاهز C30 مع التوصيل 90–115 $/م³ (مايو 2026)
+        PriceDef("readymix", "خرسانة جاهزة مسلحة (توريد)", "م³", G_STRUCT, 240.0, 2600.0, SY, sy = 100.0),
         PriceDef("struct_labor", "مصنعيات الهيكل (نجارة وحدادة وصب)", "م³", G_STRUCT, 220.0, 1500.0),
         PriceDef("plain_conc", "خرسانة عادية (توريد وصب)", "م³", G_STRUCT, 260.0, 2300.0),
         PriceDef("hordi_block", "بلوك هوردي", "بلوك", G_STRUCT, 3.5, 12.0),
 
-        PriceDef("block_unit", "بلوك أسمنتي", "بلوك", G_WALL, 2.6, 14.0),
+        // سوريا: بلوك إسمنتي 0.30–0.47 $/قطعة حسب السماكة (مايو 2026)
+        PriceDef("block_unit", "بلوك أسمنتي", "بلوك", G_WALL, 2.6, 14.0, SY, sy = 0.40),
         PriceDef("brick_unit", "طوب", "طوبة", G_WALL, 0.6, 2.6),
-        PriceDef("masonry_labor", "مصنعية ومونة المباني", "م²", G_WALL, 25.0, 90.0),
+        // سوريا: بناء جدران البلوك نحو 2.40 $/م² (دمشق، أغسطس 2026)
+        PriceDef("masonry_labor", "مصنعية ومونة المباني", "م²", G_WALL, 25.0, 90.0, SY, sy = 2.4),
         PriceDef("ext_finish", "لياسة ودهان خارجي", "م²", G_WALL, 60.0, 250.0),
         PriceDef("cladding", "تكسية الواجهة الرئيسية", "م²", G_WALL, 250.0, 1200.0),
 
-        PriceDef("finish_eco", "تشطيب اقتصادي", "م²", G_FIN, 450.0, 3570.0),
-        PriceDef("finish_mid", "تشطيب متوسط", "م²", G_FIN, 800.0, 5500.0),
-        PriceDef("finish_lux", "تشطيب فاخر", "م²", G_FIN, 1400.0, 9000.0),
+        // سوريا: إكساء اقتصادي 120–180، متوسط 180–300، فاخر 300–500+ $/م² (2026)
+        PriceDef("finish_eco", "تشطيب اقتصادي", "م²", G_FIN, 450.0, 3570.0, SY, sy = 135.0),
+        PriceDef("finish_mid", "تشطيب متوسط", "م²", G_FIN, 800.0, 5500.0, SY, sy = 215.0),
+        PriceDef("finish_lux", "تشطيب فاخر", "م²", G_FIN, 1400.0, 9000.0, SY, sy = 400.0),
         PriceDef("roof_tile", "تبليط السطح", "م²", G_FIN, 70.0, 450.0),
 
         PriceDef("wp_roof", "عزل مائي للسطح", "م²", G_INS, 35.0, 250.0),
@@ -153,7 +161,7 @@ object Prices {
     /** أسعار البداية لدولة؛ الدول بدون بيانات تبدأ بصفر حتى يدخلها المستخدم. */
     fun defaultsFor(country: String): Map<String, Double> = defs.associate {
         it.key to when (country) {
-            Countries.SYRIA -> round2(it.sa / SAR_PER_USD)
+            Countries.SYRIA -> it.sy ?: round2(it.sa / SAR_PER_USD)
             "SA" -> it.sa
             "EG" -> it.eg
             else -> 0.0

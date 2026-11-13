@@ -81,7 +81,7 @@ class Store(context: Context) {
         email = sp.getString("o_email", "") ?: "",
         logoPath = sp.getString("o_logo", "") ?: "",
         customCurrency = sp.getString("o_cur", "") ?: "",
-        sypRate = sp.getFloat("o_syp_rate", 0f).toDouble()
+        sypRate = sp.getFloat("o_syp_rate", Countries.DEFAULT_SYP_RATE.toFloat()).toDouble()
     )
 
     fun saveOffice(o: OfficeInfo) = sp.edit()
@@ -95,7 +95,7 @@ class Store(context: Context) {
     // ----- JSON -----
     private fun toJson(p: Project): JSONObject = JSONObject().apply {
         put("id", p.id); put("name", p.name); put("client", p.client)
-        put("country", p.countryCode); put("useSyp", p.useSyp); put("landArea", p.landArea)
+        put("country", p.countryCode); put("landArea", p.landArea)
         put("footprint", p.footprint); put("floors", p.floors)
         put("annexPct", p.annexPct); put("floorHeight", p.floorHeight)
         put("perimeter", p.perimeter); put("facadeWidth", p.facadeWidth)
@@ -115,8 +115,10 @@ class Store(context: Context) {
             id = d.id,
             name = o.optString("name", d.name),
             client = o.optString("client", ""),
-            countryCode = o.optString("country", d.countryCode),
-            useSyp = o.optBoolean("useSyp", false),
+            // النسخة السابقة: سوريا واحدة مع خيار useSyp
+            countryCode = o.optString("country", d.countryCode).let {
+                if (it == Countries.SYRIA && o.optBoolean("useSyp", false)) Countries.SYRIA_SYP else it
+            },
             landArea = o.optDouble("landArea", d.landArea),
             footprint = o.optDouble("footprint", d.footprint),
             floors = o.optInt("floors", d.floors),

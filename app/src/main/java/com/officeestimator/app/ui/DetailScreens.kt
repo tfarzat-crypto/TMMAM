@@ -356,13 +356,13 @@ fun RatesScreen(app: AppState) {
 
 @Composable
 fun PricesScreen(app: AppState) {
-    val code = app.project.countryCode
+    val code = app.priceCode
     val cur = app.inputCurrency
     val prices = app.countryPrices
     val allZero = prices.values.all { it <= 0.0 }
     ScreenColumn {
         Text(
-            "أسعار ${app.country.name} بالـ$cur",
+            "أسعار ${app.country.place} بالـ$cur",
             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(4.dp)
         )
@@ -373,7 +373,7 @@ fun PricesScreen(app: AppState) {
             modifier = Modifier.padding(4.dp)
         )
         if (code == Countries.SYRIA) {
-            WarningBox("أسعار سوريا تُدخل بالدولار. أرقام البداية محوَّلة من أسعار السعودية (÷ 3.75) وليست أسعار السوق السوري — راجعها قبل إخراج أي تقرير.")
+            WarningBox("أسعار سوريا تُدخل بالدولار. البنود المعلَّمة «مرجعي» من مصادر منشورة عام 2026، والمعلَّمة «افتراضي» محوَّلة من أسعار السعودية (÷ 3.75) لعدم توفر مصدر سوري — راجعها كلها قبل إخراج أي تقرير.")
             if (app.sypActive) {
                 Text(
                     "النتائج والتقرير بالليرة السورية بسعر صرف ${Fmt.money(app.office.sypRate)} ل.س للدولار (يُعدَّل من «بيانات المشروع»).",
@@ -460,8 +460,12 @@ fun SettingsScreen(app: AppState) {
                 }
             }
         }
-        SectionCard("سعر صرف الليرة السورية", "يُستخدم لمشاريع سوريا عند اختيار العرض بالليرة") {
+        SectionCard("سعر صرف الليرة السورية", "يُستخدم لمشاريع «سوريا ليرة»") {
             NumField("سعر صرف الدولار", o.sypRate, "ل.س") { v -> app.setSypRate(v) }
+            Text(
+                Countries.DEFAULT_SYP_RATE_NOTE,
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         SectionCard("العملة المخصصة", "تُستخدم عند اختيار «دولة أخرى» في بيانات المشروع") {
             TextInput("اسم العملة", o.customCurrency) { v -> app.changeOffice(o.copy(customCurrency = v)) }

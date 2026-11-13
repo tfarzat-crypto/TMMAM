@@ -67,13 +67,20 @@ class AppState(private val store: Store) {
 
     /** عملة إدخال الأسعار وسعر الأرض والبيع (سوريا تُدخل بالدولار دائماً). */
     val inputCurrency: String
-        get() = if (country.code == Countries.OTHER) office.customCurrency.ifBlank { "عملة" }
-        else country.currency
+        get() = when (country.code) {
+            Countries.OTHER -> office.customCurrency.ifBlank { "عملة" }
+            Countries.SYRIA_SYP -> Countries.USD
+            else -> country.currency
+        }
 
-    val isSyria: Boolean get() = country.code == Countries.SYRIA
+    val isSypCountry: Boolean get() = project.countryCode == Countries.SYRIA_SYP
+    val isSyria: Boolean get() = isSypCountry || project.countryCode == Countries.SYRIA
 
-    /** العرض بالليرة السورية مفعّل: مشروع سوري اختير له الليرة وسعر الصرف مُدخل. */
-    val sypActive: Boolean get() = isSyria && project.useSyp && office.sypRate > 0.0
+    /** «سوريا ليرة» و«سوريا دولار» تتشاركان قائمة أسعار واحدة بالدولار. */
+    val priceCode: String get() = if (isSypCountry) Countries.SYRIA else project.countryCode
+
+    /** العرض بالليرة السورية مفعّل: الدولة «سوريا ليرة» وسعر الصرف مُدخل. */
+    val sypActive: Boolean get() = isSypCountry && office.sypRate > 0.0
 
     /** معامل تحويل المبالغ من عملة الإدخال إلى عملة العرض. */
     val fx: Double get() = if (sypActive) office.sypRate else 1.0
@@ -82,7 +89,7 @@ class AppState(private val store: Store) {
     val currency: String get() = if (sypActive) Countries.SYP else inputCurrency
 
     val countryPrices: Map<String, Double>
-        get() = prices[project.countryCode] ?: Prices.defaultsFor(project.countryCode)
+        get() = prices[priceCode] ?: Prices.defaultsFor(priceCode)
 
     val estimate: Estimate
         get() {
@@ -144,13 +151,13 @@ class AppState(private val store: Store) {
     }
 
     fun setPrice(key: String, v: Double) {
-        val code = project.countryCode
+        val code = priceCode
         prices = prices + (code to (countryPrices + (key to v)))
         store.savePrices(prices)
     }
 
-    fun resetPrices(fromCountry: String = project.countryCode) {
-        prices = prices + (project.countryCode to Prices.defaultsFor(fromCountry))
+    fun resetPrices(fromCountry: String = priceCode) {
+        prices = prices + (priceCode to Prices.defaultsFor(fromCountry))
         store.savePrices(prices)
     }
 

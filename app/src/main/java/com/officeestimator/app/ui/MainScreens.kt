@@ -109,7 +109,7 @@ fun HomeScreen(app: AppState) {
         }
 
         if (e.missingPrices.isNotEmpty()) {
-            WarningBox("توجد ${e.missingPrices.size} أسعار غير مدخلة لدولة ${app.country.name} وتُحسب بصفر. أدخلها من تبويب «الأسعار».")
+            WarningBox("توجد ${e.missingPrices.size} أسعار غير مدخلة لدولة ${app.country.place} وتُحسب بصفر. أدخلها من تبويب «الأسعار».")
         }
 
         SectionCard("اختياراتك الأساسية", "هذه التي تغيّر السعر") {
@@ -271,20 +271,18 @@ fun ProjectDataScreen(app: AppState) {
             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text("الدولة والعملة", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("${app.country.name} — ${app.currency}", fontWeight = FontWeight.Bold)
+                    Text("${app.country.place} — ${app.currency}", fontWeight = FontWeight.Bold)
                 }
                 OutlinedButton(onClick = { pickCountry = true }) { Text("تغيير") }
             }
-            if (app.isSyria) {
-                ChoiceRow("عملة عرض النتائج والتقرير", listOf(false, true), p.useSyp, { if (it) Countries.SYP else Countries.USD }) { v ->
-                    app.update { it.copy(useSyp = v) }
-                }
+            if (app.isSypCountry) {
                 NumField("سعر صرف الدولار", app.office.sypRate, "ل.س") { v -> app.setSypRate(v) }
-                if (p.useSyp && app.office.sypRate <= 0.0) {
+                if (app.office.sypRate <= 0.0) {
                     WarningBox("أدخل سعر صرف الدولار بالليرة السورية ليتم التحويل. النتائج معروضة بالدولار حتى إدخاله.")
                 } else {
                     Text(
-                        "الأسعار وسعر الأرض والبيع تُدخل بالدولار، وتُحوَّل النتائج إلى الليرة بسعر الصرف المُدخل عند اختيارها.",
+                        "الأسعار وسعر الأرض والبيع تُدخل بالدولار، وتُحوَّل النتائج إلى الليرة بسعر الصرف أعلاه. " +
+                            Countries.DEFAULT_SYP_RATE_NOTE,
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -329,7 +327,7 @@ fun ProjectDataScreen(app: AppState) {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     Countries.all.forEach { c ->
                         Text(
-                            if (c.currency.isBlank()) c.name else "${c.name} — ${c.currency}",
+                            if (c.currency.isBlank() || c.place != c.name) c.name else "${c.name} — ${c.currency}",
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
