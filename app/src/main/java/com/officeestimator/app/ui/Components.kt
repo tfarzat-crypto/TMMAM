@@ -15,10 +15,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -240,4 +242,51 @@ fun GroupTitle(text: String) {
         text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
         modifier = Modifier.padding(top = 14.dp, bottom = 4.dp, start = 4.dp)
     )
+}
+
+// ======================= خطوات المشروع =======================
+
+/** شريط الخطوات الأربع؛ يظهر في وضع الخطوات فقط. */
+@Composable
+fun WizardHeader(app: AppState) {
+    val step = app.wizardStep
+    if (!app.wizard || step == 0) return
+    val names = listOf("البيانات", "الكميات", "الأسعار", "التقرير")
+    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        names.forEachIndexed { i, n ->
+            val n1 = i + 1
+            val bg = when {
+                n1 == step -> MaterialTheme.colorScheme.primary
+                n1 < step -> MaterialTheme.colorScheme.primaryContainer
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            }
+            val fg = when {
+                n1 == step -> MaterialTheme.colorScheme.onPrimary
+                n1 < step -> MaterialTheme.colorScheme.onPrimaryContainer
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Box(
+                Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(bg).padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "$n1. $n", color = fg, fontSize = 12.sp, maxLines = 1,
+                    fontWeight = if (n1 == step) FontWeight.Bold else FontWeight.Normal
+                )
+            }
+        }
+    }
+}
+
+/** زرا السابق والتالي أسفل كل خطوة؛ يظهران في وضع الخطوات فقط. */
+@Composable
+fun WizardNav(app: AppState, backLabel: String, onBack: () -> Unit, nextLabel: String, onNext: () -> Unit) {
+    if (!app.wizard) return
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        OutlinedButton(onClick = onBack, modifier = Modifier.weight(1f)) { Text(backLabel, maxLines = 1) }
+        Button(onClick = onNext, modifier = Modifier.weight(1.4f)) { Text(nextLabel, maxLines = 1) }
+    }
 }

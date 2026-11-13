@@ -48,7 +48,9 @@ import com.officeestimator.app.ui.MasonryScreen
 import com.officeestimator.app.ui.MaterialsScreen
 import com.officeestimator.app.ui.PricesScreen
 import com.officeestimator.app.ui.ProjectDataScreen
-import com.officeestimator.app.ui.ProjectsScreen
+import com.officeestimator.app.ui.DashboardScreen
+import com.officeestimator.app.ui.NoProjectScreen
+import com.officeestimator.app.ui.QuantitiesScreen
 import com.officeestimator.app.ui.RatesScreen
 import com.officeestimator.app.ui.ReportScreen
 import com.officeestimator.app.ui.ScheduleScreen
@@ -69,16 +71,18 @@ fun App(app: AppState) {
     EstimatorTheme(app.dark) {
         // التطبيق عربي بالكامل: الاتجاه من اليمين إلى اليسار مهما كانت لغة الجهاز
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-            BackHandler(enabled = app.screen != Screen.HOME) { app.screen = Screen.HOME }
+            BackHandler(enabled = app.screen != Screen.HOME) { app.back() }
             Scaffold(
                 containerColor = MaterialTheme.colorScheme.background,
                 topBar = { TopBar(app) },
                 bottomBar = { BottomBar(app) }
             ) { padding ->
                 Box(Modifier.fillMaxSize().padding(padding)) {
-                    when (app.screen) {
+                    val needsProject = app.screen != Screen.HOME && app.screen != Screen.SETTINGS && app.screen != Screen.RATES
+                    if (needsProject && !app.hasProject) NoProjectScreen(app) else when (app.screen) {
                         Screen.HOME -> HomeScreen(app)
-                        Screen.PROJECTS -> ProjectsScreen(app)
+                        Screen.DASHBOARD -> DashboardScreen(app)
+                        Screen.QUANTITIES -> QuantitiesScreen(app)
                         Screen.REPORT -> ReportScreen(app)
                         Screen.PRICES -> PricesScreen(app)
                         Screen.SETTINGS -> SettingsScreen(app)
@@ -107,8 +111,8 @@ private fun TopBar(app: AppState) {
             Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (!app.screen.isTab) {
-                IconButton(onClick = { app.screen = Screen.HOME }) {
+            if (!app.screen.isTab || app.wizard) {
+                IconButton(onClick = { app.back() }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
                 }
             }
@@ -122,7 +126,7 @@ private fun TopBar(app: AppState) {
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    if (app.screen == Screen.HOME) "${app.office.engineer} · ${app.project.name}" else app.project.name,
+                    if (app.screen == Screen.HOME || !app.hasProject) app.office.engineer else app.project.name,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis
@@ -140,15 +144,16 @@ private fun BottomBar(app: AppState) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
         val tabs = listOf(
             Screen.HOME to Icons.Filled.Home,
-            Screen.PROJECTS to Icons.Filled.Menu,
+            Screen.DASHBOARD to Icons.Filled.Menu,
             Screen.REPORT to Icons.Filled.Info,
             Screen.PRICES to Icons.Filled.ShoppingCart,
             Screen.SETTINGS to Icons.Filled.Settings
         )
         tabs.forEach { (screen, icon) ->
             NavigationBarItem(
-                selected = app.screen == screen || (screen == Screen.HOME && !app.screen.isTab),
-                onClick = { app.screen = screen },
+                selected = if (app.wizard) screen == Screen.HOME
+                else app.screen == screen || (screen == Screen.DASHBOARD && !app.screen.isTab),
+                onClick = { app.goTab(screen) },
                 icon = { Icon(icon, contentDescription = screen.title) },
                 label = { Text(screen.title) }
             )

@@ -102,7 +102,7 @@ class Store(context: Context) {
         put("slab", p.slab.name); put("foundation", p.foundation.name)
         put("finish", p.finish.name); put("wallUnit", p.wallUnit.name)
         put("excDepth", p.excDepth); put("replThickness", p.replThickness)
-        put("roofTiling", p.roofTiling); put("includeLandscape", p.includeLandscape)
+        put("roofTiling", p.roofTiling); put("includeInsulation", p.includeInsulation); put("includeLandscape", p.includeLandscape)
         put("landscapeArea", p.landscapeArea); put("contingencyPct", p.contingencyPct)
         put("landPrice", p.landPricePerM2); put("otherPct", p.otherPct)
         put("sellPct", p.sellPct); put("salePrice", p.salePricePerM2)
@@ -133,6 +133,7 @@ class Store(context: Context) {
             excDepth = o.optDouble("excDepth", d.excDepth),
             replThickness = o.optDouble("replThickness", d.replThickness),
             roofTiling = o.optBoolean("roofTiling", false),
+            includeInsulation = o.optBoolean("includeInsulation", true),
             includeLandscape = o.optBoolean("includeLandscape", false),
             landscapeArea = o.optDouble("landscapeArea", 0.0),
             contingencyPct = o.optDouble("contingencyPct", d.contingencyPct),

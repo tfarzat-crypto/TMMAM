@@ -59,10 +59,10 @@ fun ScreenColumn(content: @Composable ColumnScope.() -> Unit) {
 
 private data class Tile(val icon: String, val label: String, val screen: Screen)
 
-// ======================= الرئيسية =======================
+// ======================= لوحة المشروع =======================
 
 @Composable
-fun HomeScreen(app: AppState) {
+fun DashboardScreen(app: AppState) {
     val p = app.project
     val e = app.estimate
     val cur = app.currency
@@ -203,24 +203,39 @@ private fun TileGroup(app: AppState, title: String, tiles: List<Tile>) {
     }
 }
 
-// ======================= المشاريع =======================
+// ======================= الرئيسية: مشروع جديد + المشاريع السابقة =======================
 
 @Composable
-fun ProjectsScreen(app: AppState) {
+fun HomeScreen(app: AppState) {
     var toDelete by remember { mutableStateOf<Project?>(null) }
     ScreenColumn {
-        Button(onClick = { app.addProject(); app.screen = Screen.PROJECT_DATA }, modifier = Modifier.fillMaxWidth()) {
-            Text("+ مشروع جديد")
-        }
-        app.projects.forEach { p ->
-            val current = p.id == app.currentId
-            Card(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { app.select(p.id) },
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (current) MaterialTheme.colorScheme.primaryContainer
-                    else MaterialTheme.colorScheme.surface
+        Card(
+            modifier = Modifier.fillMaxWidth().clickable { app.startNew() },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+        ) {
+            Column(Modifier.padding(20.dp)) {
+                Text(
+                    "+ مشروع جديد", fontSize = 26.sp, fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "أدخل بيانات المشروع والبلد والعملة والمقاسات، فيحسب التطبيق الكميات التقديرية، ثم تراجع الأسعار على سعر السوق، ثم يخرج التقرير.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(Modifier.height(12.dp))
+                Button(onClick = { app.startNew() }, modifier = Modifier.fillMaxWidth()) { Text("ابدأ مشروعاً جديداً") }
+            }
+        }
+
+        if (app.hasProject) GroupTitle("المشاريع السابقة")
+        app.projects.sortedByDescending { it.createdAt }.forEach { p ->
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable { app.open(p.id) },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(Modifier.padding(16.dp)) {
                     Text(p.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -229,18 +244,16 @@ fun ProjectsScreen(app: AppState) {
                         append("${Countries.byCode(p.countryCode).name} · ${Fmt.qty(p.footprint)} م² × ${p.floors} أدوار")
                     }
                     Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { app.select(p.id); app.screen = Screen.HOME }) {
-                            Text(if (current) "المشروع الحالي" else "فتح")
-                        }
+                    Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        OutlinedButton(onClick = { app.open(p.id) }) { Text("فتح") }
+                        TextButton(onClick = { app.edit(p.id) }) { Text("تعديل") }
                         TextButton(onClick = { app.duplicate(p) }) { Text("نسخ") }
-                        if (app.projects.size > 1) {
-                            TextButton(onClick = { toDelete = p }) { Text("حذف", color = MaterialTheme.colorScheme.error) }
-                        }
+                        TextButton(onClick = { toDelete = p }) { Text("حذف", color = MaterialTheme.colorScheme.error) }
                     }
                 }
             }
         }
+        Spacer(Modifier.height(16.dp))
     }
     val target = toDelete
     if (target != null) {
@@ -258,6 +271,15 @@ fun ProjectsScreen(app: AppState) {
     }
 }
 
+/** تُعرض بدل شاشات المشروع قبل إنشاء أي مشروع. */
+@Composable
+fun NoProjectScreen(app: AppState) {
+    ScreenColumn {
+        WarningBox("لا يوجد مشروع بعد. أنشئ مشروعاً جديداً أولاً.")
+        Button(onClick = { app.startNew() }, modifier = Modifier.fillMaxWidth()) { Text("+ مشروع جديد") }
+    }
+}
+
 // ======================= بيانات المشروع =======================
 
 @Composable
@@ -265,6 +287,7 @@ fun ProjectDataScreen(app: AppState) {
     val p = app.project
     var pickCountry by remember { mutableStateOf(false) }
     ScreenColumn {
+        WizardHeader(app)
         SectionCard("التعريف") {
             TextInput("اسم المشروع", p.name) { v -> app.update { it.copy(name = v) } }
             TextInput("اسم العميل", p.client) { v -> app.update { it.copy(client = v) } }
@@ -311,12 +334,16 @@ fun ProjectDataScreen(app: AppState) {
             ChoiceRow("نوع الطوب", WallUnit.values().toList(), p.wallUnit, { it.ar }) { v -> app.update { it.copy(wallUnit = v) } }
             ChoiceRow("درجة التشطيب", FinishLevel.values().toList(), p.finish, { it.ar }) { v -> app.update { it.copy(finish = v) } }
             SwitchRow("تبليط السطح", p.roofTiling) { v -> app.update { it.copy(roofTiling = v) } }
+            SwitchRow("العزل (مائي وحراري وأساسات) يُحسب في التكلفة", p.includeInsulation) { v ->
+                app.update { it.copy(includeInsulation = v) }
+            }
             SwitchRow("لاندسكيب يُحسب في التكلفة", p.includeLandscape) { v -> app.update { it.copy(includeLandscape = v) } }
             if (p.includeLandscape) {
                 NumField("مساحة اللاندسكيب", p.landscapeArea, "م²") { v -> app.update { it.copy(landscapeArea = v) } }
             }
             NumField("احتياطي ونثريات", p.contingencyPct, "%") { v -> app.update { it.copy(contingencyPct = v) } }
         }
+        WizardNav(app, "الرئيسية", { app.goTab(Screen.HOME) }, "التالي: حساب الكميات", { app.step(Screen.QUANTITIES) })
         Spacer(Modifier.height(16.dp))
     }
     if (pickCountry) {

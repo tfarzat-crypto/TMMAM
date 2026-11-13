@@ -192,11 +192,12 @@ object Engine {
         if (roofTiles > 0) finishes.add(Q("تبليط السطح", roofTiles, "م²"))
 
         // ---------- العزل ----------
-        val wpRoof = fp * r("wp_roof_f")
-        val thermal = fp
-        val wpWet = built * r("wet_ratio") / 100.0 * r("wet_upturn")
-        val bitumen = fp * r("bitumen_f")
-        val insulation = listOf(
+        val ins = if (p.includeInsulation) 1.0 else 0.0
+        val wpRoof = fp * r("wp_roof_f") * ins
+        val thermal = fp * ins
+        val wpWet = built * r("wet_ratio") / 100.0 * r("wet_upturn") * ins
+        val bitumen = fp * r("bitumen_f") * ins
+        val insulation = if (!p.includeInsulation) emptyList() else listOf(
             Q("عزل مائي للسطح", wpRoof, "م²", "شامل الرفعات"),
             Q("عزل حراري للسطح", thermal, "م²"),
             Q("عزل الحمامات والمطابخ", wpWet, "م²", "${trim(r("wet_ratio"))}% من المسطح"),
@@ -265,7 +266,7 @@ object Engine {
             C("الواجهات", cFacade, "لياسة ودهان خارجي + تكسية"),
             C("التشطيب الداخلي", cFinish, if (finishKey == null) "عظم — بدون تشطيب"
             else "${p.finish.ar} × ${trim(built)} م²"),
-            C("العزل", cInsul, "سطح وحمامات وأساسات"),
+            C("العزل", cInsul, if (p.includeInsulation) "سطح وحمامات وأساسات" else "غير مشمول — باختيار المستخدم"),
             C("الحفر والردم والإحلال", cEarth, "حفر ${trim(excVol)} م³")
         )
         if (roofTiles > 0) costs.add(4, C("تبليط السطح", cRoofTile, "${trim(roofTiles)} م²"))

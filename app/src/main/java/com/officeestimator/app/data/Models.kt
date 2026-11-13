@@ -68,6 +68,8 @@ data class Project(
     val excDepth: Double = 1.5,
     val replThickness: Double = 0.0,
     val roofTiling: Boolean = false,
+    /** العزل اختياري: عند الإيقاف لا تُحسب كمياته ولا تكلفته. */
+    val includeInsulation: Boolean = true,
     val includeLandscape: Boolean = false,
     val landscapeArea: Double = 0.0,
     val contingencyPct: Double = 5.0,

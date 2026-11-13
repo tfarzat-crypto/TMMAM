@@ -16,11 +16,12 @@ import java.util.UUID
 
 enum class Screen(val title: String, val isTab: Boolean = false) {
     HOME("الرئيسية", true),
-    PROJECTS("المشاريع", true),
+    DASHBOARD("المشروع", true),
     REPORT("التقرير", true),
     PRICES("الأسعار", true),
     SETTINGS("المكتب", true),
     PROJECT_DATA("بيانات المشروع"),
+    QUANTITIES("الكميات التقديرية"),
     COST("تكلفة المبنى"),
     LAND("الأرض والربح والبيع"),
     STRUCTURE("الهيكل الخرساني"),
@@ -48,20 +49,75 @@ class AppState(private val store: Store) {
         private set
     var screen by mutableStateOf(Screen.HOME)
 
+    /** وضع الخطوات: بيانات ← كميات ← أسعار ← تقرير. */
+    var wizard by mutableStateOf(false)
+        private set
+
     init {
-        if (projects.isEmpty()) {
-            val p = newProject("مشروعي الأول")
-            projects = listOf(p)
-            currentId = p.id
-            store.saveProjects(projects)
-            store.saveCurrentId(p.id)
-        } else if (projects.none { it.id == currentId }) {
+        if (projects.isNotEmpty() && projects.none { it.id == currentId }) {
             currentId = projects.first().id
         }
     }
 
+    val hasProject: Boolean get() = projects.isNotEmpty()
+
+    /** مشروع فارغ يُستخدم فقط قبل إنشاء أول مشروع؛ لا يُحفظ. */
+    private val blank = Project(id = "")
+
     val project: Project
-        get() = projects.firstOrNull { it.id == currentId } ?: projects.first()
+        get() = projects.firstOrNull { it.id == currentId } ?: projects.firstOrNull() ?: blank
+
+    val wizardStep: Int
+        get() = when (screen) {
+            Screen.PROJECT_DATA -> 1
+            Screen.QUANTITIES -> 2
+            Screen.PRICES -> 3
+            Screen.REPORT -> 4
+            else -> 0
+        }
+
+    /** مشروع جديد يبدأ من خطوة البيانات. */
+    fun startNew() {
+        addProject()
+        wizard = true
+        screen = Screen.PROJECT_DATA
+    }
+
+    /** إعادة المرور على خطوات مشروع موجود. */
+    fun edit(id: String) {
+        select(id)
+        wizard = true
+        screen = Screen.PROJECT_DATA
+    }
+
+    fun open(id: String) {
+        select(id)
+        goTab(Screen.DASHBOARD)
+    }
+
+    fun goTab(s: Screen) {
+        wizard = false
+        screen = s
+    }
+
+    fun step(s: Screen) {
+        screen = s
+    }
+
+    fun back() {
+        if (wizard) {
+            when (screen) {
+                Screen.QUANTITIES -> screen = Screen.PROJECT_DATA
+                Screen.PRICES -> screen = Screen.QUANTITIES
+                Screen.REPORT -> screen = Screen.PRICES
+                else -> goTab(Screen.HOME)
+            }
+        } else if (screen.isTab || !hasProject) {
+            screen = Screen.HOME
+        } else {
+            screen = Screen.DASHBOARD
+        }
+    }
 
     val country: Country get() = Countries.byCode(project.countryCode)
 
@@ -134,10 +190,9 @@ class AppState(private val store: Store) {
     }
 
     fun delete(id: String) {
-        if (projects.size <= 1) return
         projects = projects.filter { it.id != id }
         store.saveProjects(projects)
-        if (currentId == id) select(projects.first().id)
+        if (currentId == id) select(projects.firstOrNull()?.id ?: "")
     }
 
     fun setRate(key: String, v: Double) {

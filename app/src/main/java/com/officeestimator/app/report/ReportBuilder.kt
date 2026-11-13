@@ -103,7 +103,7 @@ tr.t td{background:#f3ead7;font-weight:bold}
         section("الحفر والردم", e.earth)
         section("المباني", e.masonry)
         section("التشطيبات", e.finishes)
-        section("العزل", e.insulation)
+        if (e.insulation.isNotEmpty()) section("العزل", e.insulation)
         section("إجمالي الخامات", e.materials)
 
         sb.append("<h2>الجدول الزمني (${e.durationDays} يوم ≈ ${Fmt.qty(e.durationDays / 30.0)} شهر)</h2>")
@@ -147,7 +147,7 @@ tr.t td{background:#f3ead7;font-weight:bold}
         sec("الحفر والردم", e.earth)
         sec("المباني", e.masonry)
         sec("التشطيبات", e.finishes)
-        sec("العزل", e.insulation)
+        if (e.insulation.isNotEmpty()) sec("العزل", e.insulation)
         sec("الخامات", e.materials)
         for (ph in e.phases) row("الجدول الزمني", ph.name, ph.days.toString(), "يوم", "يبدأ يوم ${ph.start + 1}")
         e.months.forEachIndexed { i, m -> row("التدفق النقدي", "الشهر ${i + 1}", String.format(Locale.US, "%.0f", m), currency, "") }

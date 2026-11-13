@@ -132,6 +132,9 @@ fun MasonryScreen(app: AppState) {
 fun InsulationScreen(app: AppState) {
     val e = app.estimate
     ScreenColumn {
+        if (!app.project.includeInsulation) {
+            WarningBox("العزل غير مشمول في هذا المشروع. يُفعَّل من «بيانات المشروع».")
+        }
         SectionCard("كميات العزل") { QuantityList(e.insulation) }
         Text(
             "تُسعَّر بنود العزل من تبويب «الأسعار» وتدخل ضمن تكلفة المبنى.",
@@ -326,6 +329,36 @@ fun MaterialsScreen(app: AppState) {
     }
 }
 
+// ======================= خطوة الكميات التقديرية =======================
+
+@Composable
+fun QuantitiesScreen(app: AppState) {
+    val e = app.estimate
+    ScreenColumn {
+        WizardHeader(app)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            StatBox(Fmt.qty(e.built), "المسطح المبني · م²", Modifier.weight(1f))
+            StatBox(Fmt.qty(e.rc), "الخرسانة · م³", Modifier.weight(1f))
+            StatBox(Fmt.qty(e.steelTon), "الحديد · طن", Modifier.weight(1f))
+        }
+        Text(
+            "كميات تقديرية محسوبة من بيانات المشروع والمعدلات الهندسية، ولا تغني عن الحصر من المخططات.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(4.dp)
+        )
+        SectionCard("الهيكل الخرساني") { QuantityList(e.structure) }
+        SectionCard("حديد التسليح") { QuantityList(e.steel) }
+        SectionCard("الأساسات") { QuantityList(e.foundation) }
+        SectionCard("الحفر والردم") { QuantityList(e.earth) }
+        SectionCard("المباني") { QuantityList(e.masonry) }
+        SectionCard("التشطيبات") { QuantityList(e.finishes) }
+        if (e.insulation.isNotEmpty()) SectionCard("العزل") { QuantityList(e.insulation) }
+        SectionCard("إجمالي الخامات") { QuantityList(e.materials) }
+        WizardNav(app, "السابق: البيانات", { app.step(Screen.PROJECT_DATA) }, "التالي: مراجعة الأسعار", { app.step(Screen.PRICES) })
+    }
+}
+
 // ======================= المعدلات =======================
 
 @Composable
@@ -361,6 +394,10 @@ fun PricesScreen(app: AppState) {
     val prices = app.countryPrices
     val allZero = prices.values.all { it <= 0.0 }
     ScreenColumn {
+        WizardHeader(app)
+        if (app.wizard) {
+            WarningBox("هذه أسعار مبدئية. عدّل كل سعر حسب سعر السوق الحالي عندك ليكون التقدير أقرب ما يمكن للواقع، ثم انتقل إلى التقرير.")
+        }
         Text(
             "أسعار ${app.country.place} بالـ$cur",
             style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
@@ -419,6 +456,7 @@ fun PricesScreen(app: AppState) {
                 Text("استرجاع أسعار البداية")
             }
         }
+        WizardNav(app, "السابق: الكميات", { app.step(Screen.QUANTITIES) }, "التالي: التقرير", { app.step(Screen.REPORT) })
     }
 }
 
@@ -493,6 +531,7 @@ fun ReportScreen(app: AppState) {
     val html = Exporter.buildHtml(app)
     val name = Exporter.safeName(app.project.name)
     Column(Modifier.fillMaxSize()) {
+        Box(Modifier.padding(horizontal = 12.dp)) { WizardHeader(app) }
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -520,5 +559,8 @@ fun ReportScreen(app: AppState) {
             },
             modifier = Modifier.fillMaxWidth().weight(1f)
         )
+        Box(Modifier.padding(horizontal = 12.dp)) {
+            WizardNav(app, "السابق: الأسعار", { app.step(Screen.PRICES) }, "إنهاء وحفظ", { app.goTab(Screen.HOME) })
+        }
     }
 }
