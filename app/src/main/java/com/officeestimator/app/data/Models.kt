@@ -20,7 +20,12 @@ data class Country(val code: String, val name: String, val currency: String)
 
 object Countries {
     const val OTHER = "XX"
+    const val SYRIA = "SY"
+    const val USA = "US"
+    const val USD = "دولار"
+    const val SYP = "ليرة سورية"
     val all = listOf(
+        Country(SYRIA, "سوريا", USD),
         Country("SA", "السعودية", "ريال"),
         Country("EG", "مصر", "جنيه"),
         Country("AE", "الإمارات", "درهم"),
@@ -29,6 +34,7 @@ object Countries {
         Country("BH", "البحرين", "دينار"),
         Country("OM", "عُمان", "ريال"),
         Country("JO", "الأردن", "دينار"),
+        Country(USA, "أمريكا", USD),
         Country(OTHER, "دولة أخرى", "")
     )
 
@@ -39,7 +45,9 @@ data class Project(
     val id: String,
     val name: String = "مشروع جديد",
     val client: String = "",
-    val countryCode: String = "SA",
+    val countryCode: String = Countries.SYRIA,
+    /** لمشاريع سوريا فقط: عرض النتائج بالليرة السورية بدل الدولار. */
+    val useSyp: Boolean = false,
     val landArea: Double = 400.0,
     val footprint: Double = 200.0,
     val floors: Int = 2,
@@ -64,11 +72,19 @@ data class Project(
     val createdAt: Long = 0L
 )
 
+/** هوية المكتب ثابتة في التطبيق ولا تُعدَّل من الواجهة. */
+object Office {
+    const val NAME = "مكتب الرستن الهندسي"
+    const val ENGINEER = "المهندس تمام عبد الحسيب فرزات"
+}
+
 data class OfficeInfo(
-    val officeName: String = "",
-    val engineer: String = "",
+    val officeName: String = Office.NAME,
+    val engineer: String = Office.ENGINEER,
     val phone: String = "",
     val email: String = "",
     val logoPath: String = "",
-    val customCurrency: String = ""
+    val customCurrency: String = "",
+    /** سعر صرف الدولار بالليرة السورية؛ صفر = غير مُدخل. */
+    val sypRate: Double = 0.0
 )

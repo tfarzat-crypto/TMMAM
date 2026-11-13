@@ -93,6 +93,7 @@ object Rates {
 
 /**
  * سعر وحدة حسب الدولة. [sa] و [eg] قيم بداية فقط.
+ * أسعار سوريا (بالدولار) = أسعار السعودية ÷ [Prices.SAR_PER_USD]، وهي أرقام بداية غير موثّقة.
  * [refs] الدول التي قيمتها مأخوذة من مصدر منشور؛ غير ذلك افتراضي يجب مراجعته.
  */
 data class PriceDef(
@@ -141,17 +142,23 @@ object Prices {
         PriceDef("landscape", "اللاندسكيب", "م²", G_EARTH, 200.0, 1500.0)
     )
 
+    /** سعر ربط الريال السعودي بالدولار، لتحويل أرقام البداية السعودية إلى دولار. */
+    const val SAR_PER_USD = 3.75
+
     private val byKey = defs.associateBy { it.key }
     fun label(key: String): String = byKey[key]?.label ?: key
+
+    private fun round2(v: Double) = Math.round(v * 100.0) / 100.0
 
     /** أسعار البداية لدولة؛ الدول بدون بيانات تبدأ بصفر حتى يدخلها المستخدم. */
     fun defaultsFor(country: String): Map<String, Double> = defs.associate {
         it.key to when (country) {
+            Countries.SYRIA -> round2(it.sa / SAR_PER_USD)
             "SA" -> it.sa
             "EG" -> it.eg
             else -> 0.0
         }
     }
 
-    fun hasDefaults(country: String) = country == "SA" || country == "EG"
+    fun hasDefaults(country: String) = country == Countries.SYRIA || country == "SA" || country == "EG"
 }

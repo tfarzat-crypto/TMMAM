@@ -275,6 +275,20 @@ fun ProjectDataScreen(app: AppState) {
                 }
                 OutlinedButton(onClick = { pickCountry = true }) { Text("تغيير") }
             }
+            if (app.isSyria) {
+                ChoiceRow("عملة عرض النتائج والتقرير", listOf(false, true), p.useSyp, { if (it) Countries.SYP else Countries.USD }) { v ->
+                    app.update { it.copy(useSyp = v) }
+                }
+                NumField("سعر صرف الدولار", app.office.sypRate, "ل.س") { v -> app.setSypRate(v) }
+                if (p.useSyp && app.office.sypRate <= 0.0) {
+                    WarningBox("أدخل سعر صرف الدولار بالليرة السورية ليتم التحويل. النتائج معروضة بالدولار حتى إدخاله.")
+                } else {
+                    Text(
+                        "الأسعار وسعر الأرض والبيع تُدخل بالدولار، وتُحوَّل النتائج إلى الليرة بسعر الصرف المُدخل عند اختيارها.",
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
         SectionCard("المساحات والأدوار") {
             NumField("مساحة الأرض", p.landArea, "م²") { v -> app.update { it.copy(landArea = v) } }
@@ -375,17 +389,21 @@ fun LandScreen(app: AppState) {
     val p = app.project
     val e = app.estimate
     val cur = app.currency
+    val inCur = app.inputCurrency
     ScreenColumn {
+        if (app.sypActive) {
+            WarningBox("سعر الأرض وسعر البيع يُدخلان بالدولار، والنتائج معروضة بالليرة السورية بسعر صرف ${Fmt.money(app.office.sypRate)} ل.س للدولار.")
+        }
         SectionCard("الأرض والمصاريف") {
             NumField("مساحة الأرض", p.landArea, "م²") { v -> app.update { it.copy(landArea = v) } }
-            NumField("سعر متر الأرض", p.landPricePerM2, cur) { v -> app.update { it.copy(landPricePerM2 = v) } }
+            NumField("سعر متر الأرض", p.landPricePerM2, inCur) { v -> app.update { it.copy(landPricePerM2 = v) } }
             NumField("مصاريف أخرى (تصميم وتراخيص وإشراف)", p.otherPct, "% من التنفيذ") { v ->
                 app.update { it.copy(otherPct = v) }
             }
         }
         SectionCard("البيع") {
             NumField("نسبة المسطح القابل للبيع", p.sellPct, "%") { v -> app.update { it.copy(sellPct = v) } }
-            NumField("سعر بيع المتر", p.salePricePerM2, cur) { v -> app.update { it.copy(salePricePerM2 = v) } }
+            NumField("سعر بيع المتر", p.salePricePerM2, inCur) { v -> app.update { it.copy(salePricePerM2 = v) } }
         }
         SectionCard("النتيجة") {
             ValueRow("تكلفة التنفيذ", Fmt.money(e.execution), cur)

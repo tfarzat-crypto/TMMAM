@@ -357,7 +357,7 @@ fun RatesScreen(app: AppState) {
 @Composable
 fun PricesScreen(app: AppState) {
     val code = app.project.countryCode
-    val cur = app.currency
+    val cur = app.inputCurrency
     val prices = app.countryPrices
     val allZero = prices.values.all { it <= 0.0 }
     ScreenColumn {
@@ -372,12 +372,28 @@ fun PricesScreen(app: AppState) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(4.dp)
         )
+        if (code == Countries.SYRIA) {
+            WarningBox("أسعار سوريا تُدخل بالدولار. أرقام البداية محوَّلة من أسعار السعودية (÷ 3.75) وليست أسعار السوق السوري — راجعها قبل إخراج أي تقرير.")
+            if (app.sypActive) {
+                Text(
+                    "النتائج والتقرير بالليرة السورية بسعر صرف ${Fmt.money(app.office.sypRate)} ل.س للدولار (يُعدَّل من «بيانات المشروع»).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(4.dp)
+                )
+            }
+        }
         if (!Prices.hasDefaults(code)) {
             WarningBox("لا توجد أسعار بداية لهذه الدولة. أدخل أسعارها يدوياً، أو انسخ أسعار دولة أخرى ثم عدّلها.")
             if (allZero) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = { app.resetPrices("SA") }) { Text("نسخ أرقام السعودية") }
-                    OutlinedButton(onClick = { app.resetPrices("EG") }) { Text("نسخ أرقام مصر") }
+                    if (code == Countries.USA) {
+                        // أمريكا بالدولار: النسخ من أرقام سوريا المحوَّلة للدولار لا من أرقام بالريال أو الجنيه
+                        OutlinedButton(onClick = { app.resetPrices(Countries.SYRIA) }) { Text("نسخ أرقام سوريا (بالدولار)") }
+                    } else {
+                        OutlinedButton(onClick = { app.resetPrices("SA") }) { Text("نسخ أرقام السعودية") }
+                        OutlinedButton(onClick = { app.resetPrices("EG") }) { Text("نسخ أرقام مصر") }
+                    }
                 }
             }
         }
@@ -424,8 +440,8 @@ fun SettingsScreen(app: AppState) {
     }
     ScreenColumn {
         SectionCard("هوية المكتب", "تظهر في رأس التقرير وعلى الصفحة الرئيسية") {
-            TextInput("اسم المكتب", o.officeName) { v -> app.changeOffice(o.copy(officeName = v)) }
-            TextInput("اسم المهندس", o.engineer) { v -> app.changeOffice(o.copy(engineer = v)) }
+            ValueRow("اسم المكتب", o.officeName)
+            ValueRow("المهندس", o.engineer)
             TextInput("الهاتف", o.phone) { v -> app.changeOffice(o.copy(phone = v)) }
             TextInput("البريد الإلكتروني", o.email) { v -> app.changeOffice(o.copy(email = v)) }
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -443,6 +459,9 @@ fun SettingsScreen(app: AppState) {
                     TextButton(onClick = { app.changeOffice(o.copy(logoPath = "")) }) { Text("إزالة") }
                 }
             }
+        }
+        SectionCard("سعر صرف الليرة السورية", "يُستخدم لمشاريع سوريا عند اختيار العرض بالليرة") {
+            NumField("سعر صرف الدولار", o.sypRate, "ل.س") { v -> app.setSypRate(v) }
         }
         SectionCard("العملة المخصصة", "تُستخدم عند اختيار «دولة أخرى» في بيانات المشروع") {
             TextInput("اسم العملة", o.customCurrency) { v -> app.changeOffice(o.copy(customCurrency = v)) }

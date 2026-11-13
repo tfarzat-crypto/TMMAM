@@ -75,16 +75,17 @@ class Store(context: Context) {
 
     // ----- بيانات المكتب -----
     fun loadOffice(): OfficeInfo = OfficeInfo(
-        officeName = sp.getString("o_name", "") ?: "",
-        engineer = sp.getString("o_eng", "") ?: "",
+        officeName = Office.NAME,
+        engineer = Office.ENGINEER,
         phone = sp.getString("o_phone", "") ?: "",
         email = sp.getString("o_email", "") ?: "",
         logoPath = sp.getString("o_logo", "") ?: "",
-        customCurrency = sp.getString("o_cur", "") ?: ""
+        customCurrency = sp.getString("o_cur", "") ?: "",
+        sypRate = sp.getFloat("o_syp_rate", 0f).toDouble()
     )
 
     fun saveOffice(o: OfficeInfo) = sp.edit()
-        .putString("o_name", o.officeName).putString("o_eng", o.engineer)
+        .putFloat("o_syp_rate", o.sypRate.toFloat())
         .putString("o_phone", o.phone).putString("o_email", o.email)
         .putString("o_logo", o.logoPath).putString("o_cur", o.customCurrency).apply()
 
@@ -94,7 +95,7 @@ class Store(context: Context) {
     // ----- JSON -----
     private fun toJson(p: Project): JSONObject = JSONObject().apply {
         put("id", p.id); put("name", p.name); put("client", p.client)
-        put("country", p.countryCode); put("landArea", p.landArea)
+        put("country", p.countryCode); put("useSyp", p.useSyp); put("landArea", p.landArea)
         put("footprint", p.footprint); put("floors", p.floors)
         put("annexPct", p.annexPct); put("floorHeight", p.floorHeight)
         put("perimeter", p.perimeter); put("facadeWidth", p.facadeWidth)
@@ -115,6 +116,7 @@ class Store(context: Context) {
             name = o.optString("name", d.name),
             client = o.optString("client", ""),
             countryCode = o.optString("country", d.countryCode),
+            useSyp = o.optBoolean("useSyp", false),
             landArea = o.optDouble("landArea", d.landArea),
             footprint = o.optDouble("footprint", d.footprint),
             floors = o.optInt("floors", d.floors),

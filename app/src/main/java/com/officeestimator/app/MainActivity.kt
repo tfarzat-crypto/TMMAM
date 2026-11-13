@@ -122,7 +122,8 @@ private fun TopBar(app: AppState) {
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    app.project.name, style = MaterialTheme.typography.bodySmall,
+                    if (app.screen == Screen.HOME) "${app.office.engineer} · ${app.project.name}" else app.project.name,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis
                 )

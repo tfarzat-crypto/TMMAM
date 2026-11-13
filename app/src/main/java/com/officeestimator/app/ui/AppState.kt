@@ -65,14 +65,35 @@ class AppState(private val store: Store) {
 
     val country: Country get() = Countries.byCode(project.countryCode)
 
-    val currency: String
+    /** عملة إدخال الأسعار وسعر الأرض والبيع (سوريا تُدخل بالدولار دائماً). */
+    val inputCurrency: String
         get() = if (country.code == Countries.OTHER) office.customCurrency.ifBlank { "عملة" }
         else country.currency
+
+    val isSyria: Boolean get() = country.code == Countries.SYRIA
+
+    /** العرض بالليرة السورية مفعّل: مشروع سوري اختير له الليرة وسعر الصرف مُدخل. */
+    val sypActive: Boolean get() = isSyria && project.useSyp && office.sypRate > 0.0
+
+    /** معامل تحويل المبالغ من عملة الإدخال إلى عملة العرض. */
+    val fx: Double get() = if (sypActive) office.sypRate else 1.0
+
+    /** عملة عرض النتائج والتقرير. */
+    val currency: String get() = if (sypActive) Countries.SYP else inputCurrency
 
     val countryPrices: Map<String, Double>
         get() = prices[project.countryCode] ?: Prices.defaultsFor(project.countryCode)
 
-    val estimate: Estimate get() = Engine.compute(project, rates, countryPrices)
+    val estimate: Estimate
+        get() {
+            val f = fx
+            if (f == 1.0) return Engine.compute(project, rates, countryPrices)
+            val p = project
+            return Engine.compute(
+                p.copy(landPricePerM2 = p.landPricePerM2 * f, salePricePerM2 = p.salePricePerM2 * f),
+                rates, countryPrices.mapValues { it.value * f }
+            )
+        }
 
     private fun newProject(name: String) =
         Project(id = UUID.randomUUID().toString(), name = name, createdAt = System.currentTimeMillis())
@@ -132,6 +153,8 @@ class AppState(private val store: Store) {
         prices = prices + (project.countryCode to Prices.defaultsFor(fromCountry))
         store.savePrices(prices)
     }
+
+    fun setSypRate(v: Double) = changeOffice(office.copy(sypRate = if (v > 0.0) v else 0.0))
 
     fun changeOffice(o: OfficeInfo) {
         office = o

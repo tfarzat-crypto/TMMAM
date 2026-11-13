@@ -26,7 +26,8 @@ object Exporter {
         val date = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
         return ReportBuilder.html(
             app.project, app.estimate, app.office,
-            app.country.name, app.currency, date, logoBase64(app.office.logoPath)
+            app.country.name, app.currency, date, logoBase64(app.office.logoPath),
+            if (app.sypActive) "1 دولار = ${Fmt.money(app.office.sypRate)} ليرة سورية" else ""
         )
     }
 

@@ -29,7 +29,8 @@ object ReportBuilder {
 
     fun html(
         p: Project, e: Estimate, office: OfficeInfo,
-        countryName: String, currency: String, date: String, logoBase64: String?
+        countryName: String, currency: String, date: String, logoBase64: String?,
+        fxNote: String = ""
     ): String {
         val sb = StringBuilder()
         sb.append(
@@ -60,6 +61,7 @@ tr.t td{background:#f3ead7;font-weight:bold}
         kv("المشروع", p.name)
         if (p.client.isNotBlank()) kv("العميل", p.client)
         kv("الدولة والعملة", "$countryName — $currency")
+        if (fxNote.isNotBlank()) kv("سعر الصرف", fxNote)
         kv("التاريخ", date)
         kv("مساحة الأرض", "${Fmt.qty(p.landArea)} م²")
         kv("مسطح الدور × عدد الأدوار", "${Fmt.qty(p.footprint)} م² × ${p.floors}")
